@@ -1,0 +1,2 @@
+(window["webpackJsonp"]=window["webpackJsonp"]||[]).push([["chunk-2d0bae48"],{"38c0":function(e,n,t){"use strict";t.r(n);var c=function(){var e=this,n=e.$createElement,t=e._self._c||n;return t("h2",[e._v("增加课程")])},u=[],a={name:"CourseAdd"},r=a,s=t("2877"),o=Object(s["a"])(r,c,u,!1,null,"4f6d3065",null);n["default"]=o.exports}}]);
+//# sourceMappingURL=chunk-2d0bae48.0e1b612d.js.map

@@ -1,0 +1,2 @@
+(window["webpackJsonp"]=window["webpackJsonp"]||[]).push([["chunk-2d0ea0e8"],{"8fbf":function(e,n,t){"use strict";t.r(n);var r=function(){var e=this,n=e.$createElement,t=e._self._c||n;return t("div",[t("h2",[e._v("课程操作")]),t("router-view")],1)},u=[],a={name:"CourseOperate"},c=a,o=t("2877"),s=Object(o["a"])(c,r,u,!1,null,"04b97ff0",null);n["default"]=s.exports}}]);
+//# sourceMappingURL=chunk-2d0ea0e8.274d612a.js.map

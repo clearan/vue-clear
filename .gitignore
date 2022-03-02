@@ -1,0 +1,4 @@
+node_modules
+.idea
+manager/node_modules
+server/upload

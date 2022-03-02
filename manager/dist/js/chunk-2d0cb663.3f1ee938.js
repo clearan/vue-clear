@@ -1,0 +1,2 @@
+(window["webpackJsonp"]=window["webpackJsonp"]||[]).push([["chunk-2d0cb663"],{"4a00":function(e,n,a){"use strict";a.r(n);var t=function(){var e=this,n=e.$createElement,a=e._self._c||n;return a("h3",[e._v("课程数据")])},c=[],u={name:"CourseInfoData"},o=u,r=a("2877"),s=Object(r["a"])(o,t,c,!1,null,"2a08248e",null);n["default"]=s.exports}}]);
+//# sourceMappingURL=chunk-2d0cb663.3f1ee938.js.map
