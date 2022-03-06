@@ -2,3 +2,5 @@ node_modules
 .idea
 manager/node_modules
 server/upload
+server/data/images.json
+server/images
