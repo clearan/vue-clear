@@ -71,10 +71,23 @@ function verifyUpload(data) {
     })
 }
 
+function getFileLength(data) {
+    return axios({
+        url: 'http://localhost:3000/getFileLength',
+        method: 'post',
+        data
+    }).then(res => {
+        return res.data
+    }).catch(err => {
+        throw err
+    })
+}
+
 export {
     getUserRoutes,
     getImages,
     uploadFile,
     mergeRequest,
-    verifyUpload
+    verifyUpload,
+    getFileLength
 }

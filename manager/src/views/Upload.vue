@@ -4,6 +4,9 @@
   <input type="file" ref="input" class="input" @change="handleChange">
   <button style="margin-left: 20px" @click="pauseUpload">暂停上传</button>
   <button style="margin-left: 20px" @click="resumeUpload">恢复上传</button>
+  <button style="margin-left: 20px" @click="fileDownload">直接下载</button>
+  <button style="margin-left: 20px" @click="fileSliceDownload">分片下载</button>
+  <iframe name="myIframe" style="display:none"></iframe>
   <div class="progress">
     <p>
       <span>文件读取进度</span>
@@ -59,9 +62,10 @@
 
 <script>
 import axios from "axios";
-import {mergeRequest, verifyUpload} from "../services";
+import {mergeRequest, verifyUpload, getFileLength} from "../services";
 
 const SIZE = 20 * 1024 * 1024 // 10M
+const RANGE = 10 * 1024 * 1024
 
 export default {
   name: "Upload",
@@ -78,6 +82,11 @@ export default {
     }
   },
   computed: {
+    filename() {
+      const filename = this.file.name
+      const ext = filename.slice(filename.lastIndexOf('.'))
+      return this.fileHash + ext
+    },
     style() {
       return val => {
         return {transform: `translateX(-${100 - val}%)`}
@@ -179,10 +188,7 @@ export default {
       }
     },
     async mergeRequest() {
-      const filename = this.file.name
-      const ext = filename.slice(filename.lastIndexOf('.'))
-      console.log(this.fileHash + ext)
-      await mergeRequest({name: this.fileHash + ext, hash:this.fileHash,  size: SIZE});
+      await mergeRequest({name: this.filename, hash:this.fileHash,  size: SIZE});
     },
     createFileHash({fileChunk}) {
       return new Promise(resolve => {
@@ -231,6 +237,117 @@ export default {
       promise.cancel = cancel
       // return {promise, cancel, index: data.index}
       return promise
+    },
+    fileDownload() {
+      window.open('http://localhost:3000/download/'+this.filename,'myIframe')
+    },
+    async fileSliceDownload() {
+      // const {fileSize} = await getFileLength({filename: this.filename})
+      const {headers} = await axios({
+        url: 'http://localhost:3000/sliceDownload',
+        params: {filename: this.filename},
+        method: 'head',
+      })
+      const fileSize = headers['content-length']
+      // const blob = new Blob([r.data])
+      // console.log(blob)
+      // const href = URL.createObjectURL(blob);
+      // console.log(href)
+      // this.downloadTarget(href, this.filename);
+      // URL.revokeObjectURL(href);
+
+      const list = this.getStartEnd(fileSize, RANGE)
+      console.log(list)
+      const requests = list.map(item => {
+        return () => {
+          return new Promise(resolve => {
+            axios({
+              url: 'http://localhost:3000/sliceDownload',
+              params: {filename: this.filename},
+              method: 'get',
+              headers: {
+                'Range': `bytes=${item.start} - ${item.end}`
+              },
+              responseType: 'arraybuffer' //
+            }).then(res => {
+              resolve(res)
+            })
+          })
+        }
+      })
+      await this.handleRuleRequest(requests, 3)
+    },
+    async handleRuleRequest(arr, length) {
+      const result = []
+      const requestList = Array.from({length}).map(item => {
+        return new Promise(resolve => {
+          function deep() {
+            if (arr.length <= 0) {
+              resolve('完毕')
+              return
+            }
+            const target = arr.shift()
+            target().then((res) => {
+              result.push(res.data)
+              deep()
+            })
+          }
+          deep()
+        })
+      })
+      const isFinish = await Promise.all(requestList)
+      console.log(result)
+      const allBuffer  = this.concatBuffer(result.map(item => new Uint8Array(item)))
+      const blob = new Blob([allBuffer])
+      console.log(blob)
+      const href = URL.createObjectURL(blob);
+      this.downloadTarget(href, this.filename);
+      // 释放一个之前已经存在的、通过调用 URL.createObjectURL() 创建的 URL 对象
+      URL.revokeObjectURL(href);
+    },
+    concatBuffer(list) {
+      let totalLength = 0;
+      for (let item of list) {
+        totalLength += item.length;
+      }
+      // 实际上Uint8Array目前只能支持9位，也就是合并最大953M(999999999字节)的文件
+      let result = new Uint8Array(totalLength);
+      console.log('totalLength', totalLength)
+      let offset = 0;
+      for (let item of list) {
+        result.set(item, offset);
+        offset += item.length;
+      }
+      console.log('result', result)
+      return result.buffer;
+    },
+    getStartEnd(length, range) {
+      const list = []
+      let start = 0,end;
+      while(start < length) {
+        const tmp = start + range + 1
+        end = tmp > length ? length - 1 : tmp
+        list.push({start, end})
+        start = end + 1;
+      }
+      return list
+    },
+    downloadTarget(url, fileName = '未知文件') {
+      const el = document.createElement('a');
+      el.style.display = 'none';
+      el.setAttribute('target', '_blank');
+      /**
+       * download的属性是HTML5新增的属性
+       * href属性的地址必须是非跨域的地址，如果引用的是第三方的网站或者说是前后端分离的项目(调用后台的接口)，这时download就会不起作用。
+       * 此时，如果是下载浏览器无法解析的文件，例如.exe,.xlsx..那么浏览器会自动下载，但是如果使用浏览器可以解析的文件，比如.txt,.png,.pdf....浏览器就会采取预览模式
+       * 所以，对于.txt,.png,.pdf等的预览功能我们就可以直接不设置download属性(前提是后端响应头的Content-Type: application/octet-stream，如果为application/pdf浏览器则会判断文件为 pdf ，自动执行预览的策略)
+       */
+      fileName && el.setAttribute('download', fileName);
+      el.href = url;
+      console.log(el);
+      document.body.appendChild(el);
+      el.click();
+      document.body.removeChild(el);
     }
   },
   // mounted() {

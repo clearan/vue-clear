@@ -2,8 +2,9 @@ const router = require('koa-router')()
 const users = require('../data/user');
 const routers = require('../data/router');
 const {resolve} = require('path')
-const {readFileSync, createReadStream, createWriteStream, existsSync, mkdirSync, readdirSync, unlinkSync, rmdirSync} = require('fs')
+const {readFileSync, createReadStream, createWriteStream, existsSync, mkdirSync, readdirSync, unlinkSync, rmdirSync, statSync} = require('fs')
 const mime = require('mime-types')
+const send = require('koa-send');
 
 router.post('/user_router_auth', async (ctx, next) => {
   const {uid} = ctx.request.body
@@ -93,10 +94,7 @@ router.post('/merge', async (ctx, next) => {
   await rmdirSync(path)
   ctx.body = {msg: '上传完毕'}
 })
-router.post('/test', async (ctx, next) => {
-  await delay(3000)
-  ctx.body = 'ok'
-})
+
 router.post('/verifyUpload', async (ctx, next) => {
   const {filename, hash} = ctx.request.body
   const ext = filename.slice(filename.lastIndexOf('.'))
@@ -153,4 +151,53 @@ router.post('/canvasUpload', async ctx => {
   ctx.body = {msg: '上传成功'}
 })
 
+router.get('/download/:filename', async ctx => {
+  // const {filename} = ctx.request.body
+  // const filepath = resolve(__dirname, '../upload/target/' + filename)
+  // const reader = createReadStream(filepath)
+  // ctx.set('Content-disposition', 'attachment; filename=' + filename + '.pdf');
+  // ctx.set('Content-type', 'video/mp4');
+  const filename = ctx.params.filename;
+  const filepath = 'upload/target/'+filename
+  ctx.attachment(filepath)
+  await send(ctx, filepath)
+})
+
+router.post('/getFileLength', ctx => {
+  const {filename} = ctx.request.body;
+  const filepath = resolve(__dirname, '../upload/target/' + filename)
+  const {size} = statSync(filepath)
+  ctx.body = {fileSize: size}
+
+})
+// 分片下载： 前端首先一个HEAD请求过来，获取文件的size
+// 后端的get请求可以截获HEAD请求，然后返回文件size
+// 前端再做range请求处理。
+router.get('/sliceDownload', ctx => {
+  const {filename} = ctx.query;
+  const filepath = resolve(__dirname, '../upload/target/' + filename)
+  const {size} = statSync(filepath)
+  const {range} =ctx.headers;
+  // 下面的注释按照标准来的话应该要带上的，不带文件也可以正常返回
+  if (!range) {
+    // ctx.set('Accept-Ranges', 'bytes')
+    // ctx.set('Content-Disposition', 'attachment; filename=' + encodeURIComponent(filename),)
+    // ctx.set('content-type', 'application/oct-stream')
+    // ctx.set("Access-Control-Expose-Headers", 'Content-Disposition')
+    ctx.set('Content-Length', size)
+    ctx.body = createReadStream(filepath) // HEAD请求没有响应体，但是ctx.body还是要赋值文件流，不然404，浏览器会忽略掉响应体的内容
+  } else {
+    // ctx.response.status = 206;
+    // ctx.set('Accept-Ranges', 'bytes')
+    const start = Number(range.split('-')[0].split('=')[1])
+    const end = Number(range.split('-')[1])
+    // ctx.set('Content-Range', `bytes ${start}-${end}/${size} `)
+    ctx.body = createReadStream(filepath, {start, end})
+  }
+})
+
+router.post('/test', async (ctx, next) => {
+  await delay(200)
+  ctx.body = 'ok'
+})
 module.exports = router
