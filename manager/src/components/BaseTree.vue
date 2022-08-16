@@ -54,6 +54,14 @@ export default {
       this.$set(this.showChildren, index, flag);
     },
   },
+  deactivated() {
+    // 加上了keepalive之后，隐藏子集就不会销毁子组件，每次隐藏会触发deactivated钩子函数
+    console.log('deactivated')
+  },
+  destroyed() {
+    // 没有keepalive，每次隐藏子集，就会销毁子组件，性能很低
+    console.log('destroyed')
+  }
 }
 </script>
 
