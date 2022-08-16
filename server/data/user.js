@@ -2,7 +2,7 @@ module.exports = [
     {
         id: 1,
         name: 'zhangsan',
-        auth: [9,10,11],
+        auth: [9,10,11,12],
     },
     {
         id: 2,

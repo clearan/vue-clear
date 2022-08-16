@@ -200,4 +200,9 @@ router.post('/test', async (ctx, next) => {
   await delay(200)
   ctx.body = 'ok'
 })
+
+router.post('/log', (ctx) => {
+  console.log(ctx.request.body)
+  ctx.body = 'OK'
+})
 module.exports = router

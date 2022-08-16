@@ -74,4 +74,11 @@ module.exports = [
         name: 'Canvas',
         title: 'canvas裁切',
     },
+    {
+        id: 12,
+        pid: 0,
+        path: '/tree',
+        name: 'Tree',
+        title: '树形结构',
+    },
 ]
